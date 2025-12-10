@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+//import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-const List<String> list = <String>['Cheval', 'Tristan', 'Enzo', 'le cheval de potter'];
-
+const List<String> list = <String>["Selectiondrebanque"];
+//'Roue de modulation', 'Controleur de souffle','Pedale de pied continue','Temps de portamento','Curseur entrée de données','Volume','Balance','Panoramique','Expression','Controle d effet 1','Controle d effet 2 ',' Réglage continu général 1' 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
- 
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -15,30 +16,21 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
           title: const Text('Clavier Midi'),
         ),
-        body: Column(
+        body: Center(
+          child: Column(
           children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: Text(
-                'Bienvenue dans les configurations du Clavier !',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            SizedBox(
-              height: 250, // hauteur fixe du tableau
-
-
-            ),
+            for (int k = 1; k <= 4; k++)
+              DropdownButtonPot(numero: k),
             
-            
+
             SizedBox(
-              height: 250, // hauteur fixe du tableau
+              height: 220, // hauteur fixe du tableau
               child: Padding(
                 padding: const EdgeInsets.all(5),
                 child: GridView.count(
                   crossAxisCount: 8, // 8 colonnes
-                  mainAxisSpacing: 3, // espace vertical
-                  crossAxisSpacing: 5, // espace horizontal
+                  mainAxisSpacing: 2, // espace vertical
+                  crossAxisSpacing: 2, // espace horizontal
                   shrinkWrap: true, // ✅ réduit la taille au contenu
                   children: [
                     for (int i = 1; i <= 32; i++) ...[
@@ -88,6 +80,7 @@ class MyApp extends StatelessWidget {
           ],
         ),
       ),
+     )
     );
   }
 }
@@ -146,9 +139,10 @@ class _CustomButtonState extends State<CustomButton> {
   }
 }
 
-
 class DropdownButtonPot extends StatefulWidget {
-  const DropdownButtonPot({super.key});
+  final int numero; // <-- on ajoute un paramètre
+
+  const DropdownButtonPot({super.key, required this.numero});
 
   @override
   State<DropdownButtonPot> createState() => _DropdownButtonPotState();
@@ -159,25 +153,43 @@ class _DropdownButtonPotState extends State<DropdownButtonPot> {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton<String>(
-      value: dropdownValue,
-      icon: const Icon(Icons.arrow_downward),
-      elevation: 16,
-      style: const TextStyle(color: Colors.deepPurple),
-      underline: Container(height: 2, color: Colors.deepPurpleAccent),
-      onChanged: (String? value) {
-        // This is called when the user selects an item.
-        setState(() {
-          dropdownValue = value!;
-        });
-      },
-      items: list.map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(value: value, child: Text(value));
-      }).toList(),
+    return Row(
+      children: [
+        // Affiche le numéro au-dessus
+        Text(
+          "Potentiomètre ${widget.numero} :",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        DropdownButton<String>(
+          value: dropdownValue,
+          icon: const Icon(Icons.arrow_downward),
+          style: const TextStyle(color: Colors.blue),
+          underline: Container(height: 2, color: Colors.blue),
+          onChanged: (String? value) {
+            setState(() {
+              dropdownValue = value!;
+            });
+          },
+          items: list.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
 
+/*class GestionBLE {
+  
+  BluetoothDevice? _connectedDevice;
+  List<BluetoothService> _services = [];
+}*/
 
 
 
