@@ -6,13 +6,14 @@ import 'dart:async';
 const List<String> list = <String>["Volume", "Balance", "Timbre", "Brillance"];
 //'Roue de modulation', 'Controleur de souffle','Pedale de pied continue','Temps de portamento','Curseur entrée de données','Volume','Balance','Panoramique','Expression','Controle d effet 1','Controle d effet 2 ',' Réglage continu général 1' 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  
+  MyApp({super.key});
+  final GestionBLE ble = GestionBLE();
   
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
-      title: 'Mon App Fixe',
+      title: 'Clavier MIDI',
       home: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.blue,
@@ -22,7 +23,7 @@ class MyApp extends StatelessWidget {
         body: Center(
           child: Column(
           children: [
-            BleScannerWidget(),
+            BleScannerWidget(ble: ble),
 
             for (int k = 1; k <= 4; k++)
               DropdownButtonPot(numero: k),
@@ -42,40 +43,52 @@ class MyApp extends StatelessWidget {
                       if (i >= 1 && i <= 4 || i>=29 && i<=32)
                         CustomButton(
                         label: "N°$i",
-                        onPressed: () {
-                          //final ble = GestionBLE();
-                          //ble.writeToCharacteristic( serviceUUID : );
-                        },
+                        num: i,
+                        ble: ble,
+                        /*onPressed: () async {
+                        // Exemple : écrire 8 octets dans la caractéristique MIDI BLE
+                        await ble.writeToCharacteristic(
+                        "4fafc201-1fb5-459e-8fcc-c5c9c331914b", // Service MIDI BLE
+                        "beb5483e-36e1-4688-b7f5-ea07361b26a8", // Caractéristique MIDI BLE
+                        [0x41, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0XFF, 0xFF],               // tableau de 8 octets
+                        );
+                      },*/
                        ),
                       if (i >= 5 && i <= 8)
                        CustomButton(
                        label: "N°${i + 12}",
-                       onPressed: () {},
+                       num: i+12,
+                       ble: ble,
                       ),
                       if (i >=9  && i <=12)
                        CustomButton(
                        label: "N°${i -4}",
-                       onPressed: () {},
+                       num: i-4,
+                       ble: ble,
                       ),
                       if (i >= 13 && i <= 16)
                        CustomButton(
                        label: "N°${i + 8}",
-                       onPressed: () {},
+                       num: i+8,
+                       ble: ble,
                       ),
                       if (i >= 17 && i <= 20)
                        CustomButton(
                        label: "N°${i - 8}",
-                       onPressed: () {},
+                       num: i-8,
+                       ble: ble,
                       ),
                       if (i >= 21 && i <= 24)
                        CustomButton(
                        label: "N°${i + 4}",
-                       onPressed: () {},
+                       num: i+4,
+                       ble: ble,
                       ),
                       if (i >= 25 && i <= 28)
                        CustomButton(
                        label: "N°${i - 12}",
-                       onPressed: () {},
+                       num: i-12,
+                       ble: ble,
                       ),
                     ],
                   ],
@@ -95,12 +108,14 @@ class MyApp extends StatelessWidget {
 
 class CustomButton extends StatefulWidget {
   final String label;          // texte du bouton
-  final VoidCallback onPressed; // action quand on clique
+  final int num;               //numéro du bouton
+  final GestionBLE ble;
 
   const CustomButton({
     super.key,
     required this.label,
-    required this.onPressed,
+    required this.num,
+    required this.ble
   });
 
   @override
@@ -112,24 +127,48 @@ class _CustomButtonState extends State<CustomButton> {
 
   final List<Color> _colors = [
     Colors.grey,
-    Colors.red,
     Colors.green,
+    Colors.red,
     Colors.orange,
   ];
+ // Trame globale de 8 octets
+  static List<int> trame = List<int>.filled(8, 0);
+  // Met à jour uniquement les bits du bouton num
+  Future<List<int>> Traitement(int number, int valeur) async{
+    print(number);
+    int octetIndex = (number - 1) ~/ 4;        // quel octet
+    int position   = ((number - 1) % 4) * 2;   // position des 2 bits
+
+    // Efface les 2 bits existants
+    trame[octetIndex] &= ~(0x03 << position);
+
+    // Insère la nouvelle valeur (0..3)
+    trame[octetIndex] |= (valeur & 0x03) << position;
+
+   // Envoie la trame complète via BLE
+    await widget.ble.writeToCharacteristic(
+    "4fafc201-1fb5-459e-8fcc-c5c9c331914b",
+    "beb5483e-36e1-4688-b7f5-ea07361b26a8",
+    trame,
+  );
+
+    return trame;
+  }
 
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        // on exécute l'action passée en paramètre
-        widget.onPressed();
-
+      onPressed: () { 
         // et on modifie l'état interne
         setState(() {
           _colorIndex = (_colorIndex + 1) % _colors.length;
         });
+     
+        // on exécute l'action passée en paramètre
+        Traitement(widget.num, _colorIndex );
       },
+       
       style: ElevatedButton.styleFrom(
       backgroundColor: _colors[_colorIndex], 
       foregroundColor: Colors.white,
@@ -195,8 +234,9 @@ class _DropdownButtonPotState extends State<DropdownButtonPot> {
 }
 
 class BleScannerWidget extends StatefulWidget {
-  const BleScannerWidget({super.key});
-
+  final GestionBLE ble;
+  const BleScannerWidget({super.key, required this.ble});
+  
   @override
   State<BleScannerWidget> createState() => _BleScannerWidgetState();
 }
@@ -210,8 +250,7 @@ class _BleScannerWidgetState extends State<BleScannerWidget> {
       _status = "Scan en cours...";
     });
 
-    final ble = GestionBLE();
-    bool found = await ble.scanAndConnectMidiPlayer();
+    bool found = await widget.ble.scanAndConnectMidiPlayer();
 
     setState(() {
       _status = found ? "Clavier connecté" : "Clavier non connecté";
@@ -223,8 +262,7 @@ class _BleScannerWidgetState extends State<BleScannerWidget> {
       _status = "Non connecté";
     });
 
-    final ble = GestionBLE();
-    ble.disconnect();
+    widget.ble.disconnect();
   }
 
  @override
@@ -260,9 +298,6 @@ Widget build(BuildContext context) {
   );
  }
 }
-
-
-
 
 class GestionBLE {
   BluetoothDevice? _connectedDevice;
@@ -323,8 +358,7 @@ class GestionBLE {
           // Découverte des services
           _services = await _connectedDevice!.discoverServices();
           await Future.delayed(const Duration(seconds: 2));
-          print("cheval");
-          print(_services);
+      
           completer.complete(true); // ✅ connecté
         } catch (e) {
           completer.complete(false); // ❌ erreur de connexion
@@ -365,7 +399,7 @@ class GestionBLE {
       }
     }
 
-Future<void> writeToCharacteristic(
+  Future<void> writeToCharacteristic(
     String serviceUuid, 
     String characteristicUuid, 
     List<int> data) async {
@@ -411,5 +445,5 @@ Future<void> writeToCharacteristic(
 }
 
 void main() {
-    runApp(const MyApp());
+    runApp(MyApp());
 }
