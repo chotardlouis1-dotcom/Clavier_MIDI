@@ -6,10 +6,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'bouton_config.dart';
 
 
-
-
-
-
 final List<String> liste0127 = [...List.generate(128, (i) => i.toString()), "Aucun sélectionné"];
 final List<int> listeMidi0127 = [...List.generate(129, (i) => i.toInt()), ];
 final List<String> listVelocite = [...List.generate(128, (i) => i.toString()), ];
@@ -103,6 +99,8 @@ class _MyAppState extends State<MyApp> {
   final GestionBLE ble = GestionBLE();
   int preset = 0;
   bool enregistrementEnabled = false;
+  bool enregistrement2 = false;
+  bool ModeUart = false;
   void savePreset(String presetName) {   //enregistre dans la base de donnée
   //enregistrement du tableau configboutons dans la base de donnée hive dans la box presets dans le nom du preset
   var box = Hive.box('presets');
@@ -159,7 +157,7 @@ class _MyAppState extends State<MyApp> {
           foregroundColor: Colors.white,
           title: const Text('Clavier Midi'),
         ),
-        body: Center(
+        body: SingleChildScrollView(
           child: Column(
           children: [ 
             BleScannerWidget(ble: ble), //On génère les boutons de connection du BLE 
@@ -262,7 +260,6 @@ class _MyAppState extends State<MyApp> {
                 }
               }
              );
-             //print(Hive.box('presets').keys);
             }, 
             style: ElevatedButton.styleFrom( 
               backgroundColor: Colors.blue, 
@@ -288,11 +285,9 @@ class _MyAppState extends State<MyApp> {
                 setState(() { 
                   enregistrementEnabled = value; 
                   if (enregistrementEnabled == true){
-                    print("enregistrement activé");
                     ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [1]);
                   }
                   else{
-                    print("enregistrement désactivé");
                     ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [0]);
                   }
                 }
@@ -301,7 +296,6 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton( onPressed: () { 
             setState(() { 
-              print("Lancement ou lecture de l'enregistrement");
               ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [2]);
               }
              );
@@ -315,6 +309,72 @@ class _MyAppState extends State<MyApp> {
              ), 
             child: const Text("Lancement"), 
             ),
+           ],
+           ), 
+           Row(children: [
+              const Text( "Enregistrement 2 :", 
+              style: TextStyle(fontSize: 16, 
+                fontWeight: FontWeight.bold
+                ),
+                ),
+              Switch( value: enregistrement2, 
+              activeTrackColor: Colors.blueAccent, //bouton bleu quand activé 
+              onChanged: (value) { 
+                setState(() { 
+                  enregistrement2 = value; 
+                  if (enregistrement2 == true){
+                    ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [5]);
+                  }
+                  else{
+                    ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [4]);
+                  }
+                }
+               );
+              }, 
+            ),
+            ElevatedButton( onPressed: () { 
+            setState(() { 
+              ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [3]);
+              }
+             );
+            }, 
+            style: ElevatedButton.styleFrom( 
+              backgroundColor: Colors.blue, 
+              foregroundColor: Colors.white, 
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12), 
+              textStyle: const TextStyle( fontSize: 15, fontWeight: FontWeight.bold,
+              ),
+             ), 
+            child: const Text("Lancement"), 
+            ),
+           ],
+           ), 
+           Row(children: [
+            Text( "Mode logiciel :", 
+              style: TextStyle(fontSize: 16, 
+                fontWeight: FontWeight.bold
+                ),
+                ),
+              Switch( value: ModeUart, 
+              activeTrackColor: Colors.blueAccent, //bouton bleu quand activé 
+              onChanged: (value) { 
+                setState(() { 
+                  ModeUart = value; 
+                  if (ModeUart == true){
+                    ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [6]);
+                  }
+                  else{
+                    ble.writeToCharacteristic("6fe3f4e0-9835-48e5-9e44-74a5d48675d5", "101ce6c9-03e4-4334-a1b5-5e569bcd8433", [7]);
+                  }
+                }
+               );
+              }, 
+            ),
+            Text( " : Mode filaire ", 
+              style: TextStyle(fontSize: 16, 
+                fontWeight: FontWeight.bold
+                ),
+                ),
            ],
            )
           ],
@@ -636,7 +696,7 @@ class _BleScannerWidgetState extends State<BleScannerWidget> {
   }
 
  @override
-Widget build(BuildContext context) {
+ Widget build(BuildContext context) {
   return Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
@@ -977,9 +1037,6 @@ class GestionBLE {
     print("Erreur lors de l'écriture: $e");
   }
 }
-
-
-
 }
 
 void main() async{
